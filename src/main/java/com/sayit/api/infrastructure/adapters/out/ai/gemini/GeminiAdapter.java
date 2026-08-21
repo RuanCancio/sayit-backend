@@ -32,15 +32,20 @@ public class GeminiAdapter implements AiProviderPort {
                         )
                 )
         );
+try {
+    Map<String, Object> response = restClient.post()
+            .uri(java.net.URI.create(url))
+            .header("Content-Type", "application/json")
+            .body(requestBody)
+            .retrieve()
+            .body(Map.class);
 
-        Map<String, Object> response = restClient.post()
-                .uri(url)
-                .header("Content-Type", "application/json")
-                .body(requestBody)
-                .retrieve()
-                .body(Map.class);
+    return extractTextFromResponse(response);
+} catch (Exception e) {
+    e.printStackTrace();
+    return "Tecnical Trouble: " + e.getMessage();
+}
 
-        return extractTextFromResponse(response);
     }
 
     @SuppressWarnings("unchecked")
