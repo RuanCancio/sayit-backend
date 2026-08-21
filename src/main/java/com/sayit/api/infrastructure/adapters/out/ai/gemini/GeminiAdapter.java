@@ -32,7 +32,7 @@ public class GeminiAdapter implements AiProviderPort {
                         )
                 )
         );
-try {
+
     Map<String, Object> response = restClient.post()
             .uri(java.net.URI.create(url))
             .header("Content-Type", "application/json")
@@ -41,9 +41,7 @@ try {
             .body(Map.class);
 
     return extractTextFromResponse(response);
-} catch (Exception e) {
-    return "Error Connexion, try again a few seconds";
-}
+
 
     }
 
