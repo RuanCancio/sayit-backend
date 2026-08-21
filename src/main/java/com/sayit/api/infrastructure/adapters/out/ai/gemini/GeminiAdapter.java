@@ -42,8 +42,7 @@ try {
 
     return extractTextFromResponse(response);
 } catch (Exception e) {
-    e.printStackTrace();
-    return "Tecnical Trouble: " + e.getMessage();
+    return "Error Connexion, try again a few seconds";
 }
 
     }
