@@ -49,10 +49,10 @@ public class GeminiAdapter implements AiProviderPort {
     private String extractTextFromResponse(Map<String, Object> response) {
         try {
             List<Map<String , Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
-            Map<String, Object> firstCandidate = candidates.get(0);
+            Map<String, Object> firstCandidate = candidates.getFirst();
             Map<String, Object> content = (Map<String, Object>) firstCandidate.get("content");
             List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-            return (String) parts.get(0).get("text");
+            return (String) parts.getFirst().get("text");
         } catch (Exception e) {
             return "Error to process response of Gemini.";
         }
