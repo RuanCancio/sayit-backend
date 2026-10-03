@@ -3,8 +3,9 @@ package com.sayit.api.infrastructure.adapters.out.ai.gemini;
 import com.sayit.api.application.ports.out.AiProviderPort;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
-import java.net.URI; // 🟢 Import adicionado
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -20,25 +21,32 @@ public class GeminiAdapter implements AiProviderPort {
 
         String url = "https://openrouter.ai/api/v1/chat/completions";
 
-        // 🟢 r minúsculo em requestBody e ponto-e-vírgula no final
+        // 🟢 Usando o roteador de modelos gratuitos oficial do OpenRouter
         Map<String, Object> requestBody = Map.of(
-                "model", "google/gemini-2.0-flash-exp:free",
+                "model", "openrouter/free",
                 "messages", List.of(
                         Map.of("role", "user", "content", messageWithInstructions)
                 )
         );
 
-        Map<?, ?> response = restClient.post()
-                .uri(URI.create(url))
-                .header("Authorization", "Bearer " + apiKey)
-                .header("Content-Type", "application/json")
-                .header("HTTP-Referer", "https://sayit.app")
-                .header("X-Title", "SayIt Desktop")
-                .body(requestBody)
-                .retrieve()
-                .body(Map.class);
+        try {
+            Map<?, ?> response = restClient.post()
+                    .uri(URI.create(url))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .header("HTTP-Referer", "https://sayit.app")
+                    .header("X-Title", "SayIt Desktop")
+                    .body(requestBody)
+                    .retrieve()
+                    .body(Map.class);
 
-        return extractTextFromOpenRouter(response);
+            return extractTextFromOpenRouter(response);
+
+        } catch (RestClientResponseException e) {
+            return "Aviso da IA: Problema na comunicação com o OpenRouter (Verifique sua chave).";
+        } catch (Exception e) {
+            return "Erro inesperado ao contactar a IA.";
+        }
     }
 
     @SuppressWarnings("unchecked")
