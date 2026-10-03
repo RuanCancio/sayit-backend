@@ -1,60 +1,67 @@
 package com.sayit.api.infrastructure.adapters.out.ai.gemini;
 
 import com.sayit.api.application.ports.out.AiProviderPort;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.net.URI; // 🟢 Import adicionado
 import java.util.List;
 import java.util.Map;
 
 @Component
 public class GeminiAdapter implements AiProviderPort {
 
-    @Value("${ai.api.key}")
-    private String apiKey;
-
     private final RestClient restClient = RestClient.create();
 
     @Override
-    public String generateText(String userMessage) {
+    public String generateText(String userMessage, String apiKey) {
 
         String messageWithInstructions = userMessage + " [System note: Answer strictly in the exact same language the user used in the message above. Be extremely concise, direct, and informal. Use a maximum of two sentences.]";
 
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" + apiKey;
+        String url = "https://openrouter.ai/api/v1/chat/completions";
 
+        // 🟢 r minúsculo em requestBody e ponto-e-vírgula no final
         Map<String, Object> requestBody = Map.of(
-                "contents", List.of(
-                        Map.of(
-                                "parts", List.of(
-                                        Map.of("text", messageWithInstructions)
-                                )
-                        )
+                "model", "google/gemini-2.0-flash-exp:free",
+                "messages", List.of(
+                        Map.of("role", "user", "content", messageWithInstructions)
                 )
         );
 
-    Map<String, Object> response = restClient.post()
-            .uri(java.net.URI.create(url))
-            .header("Content-Type", "application/json")
-            .body(requestBody)
-            .retrieve()
-            .body(Map.class);
+        Map<?, ?> response = restClient.post()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .header("HTTP-Referer", "https://sayit.app")
+                .header("X-Title", "SayIt Desktop")
+                .body(requestBody)
+                .retrieve()
+                .body(Map.class);
 
-    return extractTextFromResponse(response);
-
-
+        return extractTextFromOpenRouter(response);
     }
 
     @SuppressWarnings("unchecked")
-    private String extractTextFromResponse(Map<String, Object> response) {
+    private String extractTextFromOpenRouter(Map<?, ?> response) {
         try {
-            List<Map<String , Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
-            Map<String, Object> firstCandidate = candidates.getFirst();
-            Map<String, Object> content = (Map<String, Object>) firstCandidate.get("content");
-            List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-            return (String) parts.getFirst().get("text");
+            if (response == null || !response.containsKey("choices")) {
+                return "Resposta vazia da IA.";
+            }
+
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
+            if (choices == null || choices.isEmpty()) {
+                return "Nenhuma resposta retornada pela IA.";
+            }
+
+            Map<String, Object> firstChoice = choices.get(0);
+            Map<String, Object> message = (Map<String, Object>) firstChoice.get("message");
+            if (message == null || !message.containsKey("content")) {
+                return "Conteúdo da resposta inválido.";
+            }
+
+            return (String) message.get("content");
         } catch (Exception e) {
-            return "Error to process response of Gemini.";
+            return "Erro ao processar a resposta da IA.";
         }
     }
 }
